@@ -161,8 +161,29 @@ Write-Host ("Parts ready : {0}  ({1} GB)" -f $parts.Count, $totalGb)
 
 if (-not $InstallDir) {
     $default = 'C:\Games\World of Warcraft 3.3.5a'
-    $InstallDir = Read-Host "Install folder [$default]"
-    if ([string]::IsNullOrWhiteSpace($InstallDir)) { $InstallDir = $default }
+    Write-Host ''
+    Write-Host 'Choose where to install the client.' -ForegroundColor Yellow
+    Write-Host 'A folder picker will open. Pick a folder (or Cancel to type a path).'
+    Write-Host "Default if you cancel/skip: $default"
+    try {
+        Add-Type -AssemblyName System.Windows.Forms -ErrorAction Stop
+        $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+        $dialog.Description = 'Choose WoW 3.3.5a install folder'
+        $dialog.ShowNewFolderButton = $true
+        if (Test-Path 'C:\Games') { $dialog.SelectedPath = 'C:\Games' }
+        $result = $dialog.ShowDialog()
+        if ($result -eq [System.Windows.Forms.DialogResult]::OK -and $dialog.SelectedPath) {
+            # Install into a subfolder inside the chosen location
+            $InstallDir = Join-Path $dialog.SelectedPath 'World of Warcraft 3.3.5a'
+        }
+    } catch {
+        Write-Host 'Folder picker unavailable; type a path instead.' -ForegroundColor DarkYellow
+    }
+    if (-not $InstallDir) {
+        $typed = Read-Host "Install folder [$default]"
+        $InstallDir = if ([string]::IsNullOrWhiteSpace($typed)) { $default } else { $typed }
+    }
+    Write-Host "Install path: $InstallDir" -ForegroundColor Green
 }
 
 $InstallDir = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($InstallDir)
